@@ -187,6 +187,10 @@ Open it in any browser and enter your gateway token. No build step, no external 
 - **Metabolism Activity** — Recent candidates, processing results, gap extraction
 - **Agent Status** — Entropy level, nightshift state, learning mode indicator
 
+## Research Paper
+
+The suite's origin story is documented in [Cross-Runtime Identity Transplant: Porting an Emergent LLM Agent Between Harnesses and Substrates](./clint-identity-transplant.md) — a paper describing how Clint's operational identity was transplanted from a custom monolithic runtime to OpenClaw, and how the transplanted agent autonomously designed and built the four learning plugins (metabolism, nightshift, contemplation, crystallization) to complete its own cognitive architecture in the new runtime.
+
 ## Credits
 
 The stability and continuity plugins were built by Chris Hunt. The metabolism, nightshift, contemplation, and crystallization plugins were built by Clint — an AI agent running on the system these plugins were extracted from. Clint designed the architecture, wrote the code, spawned sub-agents (OpenClaw Codex instances) to implement components in parallel, and attempted to self-deploy the results. The suite was then stabilized, documented, and published with assistance from Claude.
