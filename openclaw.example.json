@@ -1,0 +1,79 @@
+{
+  "_comment": "Example OpenClaw configuration with the full Meta-Cognitive Suite",
+  "_load_order": "Plugins load in the order listed. This order matters for the global bus.",
+
+  "plugins": {
+    "load": {
+      "paths": [
+        "/path/to/openclaw-plugin-stability",
+        "/path/to/openclaw-plugin-continuity",
+        "/path/to/openclaw-plugin-metabolism",
+        "/path/to/openclaw-plugin-nightshift",
+        "/path/to/openclaw-plugin-contemplation",
+        "/path/to/openclaw-plugin-crystallization"
+      ]
+    },
+
+    "entries": {
+      "stability": {
+        "enabled": true,
+        "entropy": { "enabled": true },
+        "growthVectors": { "enabled": true },
+        "heartbeat": { "enabled": true }
+      },
+      "continuity": {
+        "enabled": true,
+        "contextBudget": 2000,
+        "archiveAfterMinutes": 5
+      },
+      "metabolism": {
+        "enabled": true,
+        "thresholds": {
+          "entropyMinimum": 0.6,
+          "exchangeMinimum": 3,
+          "cooldownMinutes": 30
+        },
+        "llm": {
+          "model": "your-model-id",
+          "temperature": 0.7,
+          "maxTokens": 2000
+        }
+      },
+      "nightshift": {
+        "enabled": true,
+        "defaultOfficeHours": {
+          "start": "22:30",
+          "end": "05:00",
+          "timezone": "America/Los_Angeles"
+        },
+        "bufferMinutes": 30
+      },
+      "contemplation": {
+        "enabled": true,
+        "passes": {
+          "pass1": { "delayMs": 0 },
+          "pass2": { "delayMs": 14400000 },
+          "pass3": { "delayMs": 72000000 }
+        },
+        "tagging": { "enabled": true }
+      },
+      "crystallization": {
+        "enabled": true,
+        "thresholds": {
+          "minAgeDays": 30,
+          "minReinforcements": 3,
+          "principleAlignmentMin": 0.7
+        },
+        "approval": {
+          "required": true,
+          "channel": "telegram"
+        }
+      }
+    }
+  },
+
+  "_deployment_modes": {
+    "_training": "All plugins enabled. Agent learns autonomously from conversations.",
+    "_frozen": "Set enabled: false on metabolism, nightshift, contemplation, crystallization. Agent retains all accumulated knowledge but stops active learning. Stability and continuity stay on."
+  }
+}

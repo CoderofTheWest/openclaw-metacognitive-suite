@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meta-Cognitive Suite — Training Dashboard</title>
+<style>
+  :root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --fg: #c9d1d9; --fg2: #8b949e; --fg3: #484f58;
+    --accent: #58a6ff; --green: #3fb950; --amber: #d29922; --red: #f85149;
+    --border: #30363d; --radius: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace; background: var(--bg); color: var(--fg); }
+  .app { display: grid; grid-template-rows: auto 1fr auto; height: 100vh; }
+
+  /* Header */
+  header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; gap: 16px; }
+  header h1 { font-size: 16px; font-weight: 600; }
+  .conn-status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--fg2); }
+  .conn-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); }
+  .conn-dot.connected { background: var(--green); }
+  .agent-select { margin-left: auto; background: var(--bg3); color: var(--fg); border: 1px solid var(--border); border-radius: var(--radius); padding: 4px 8px; font-size: 12px; }
+  .mode-badge { padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+  .mode-badge.training { background: rgba(63,185,80,0.15); color: var(--green); }
+  .mode-badge.frozen { background: rgba(210,153,34,0.15); color: var(--amber); }
+
+  /* Main grid */
+  main { display: grid; grid-template-columns: 280px 1fr 320px; gap: 1px; background: var(--border); overflow: hidden; }
+
+  /* Sidebar */
+  .sidebar { background: var(--bg2); overflow-y: auto; padding: 12px; }
+  .sidebar h3 { font-size: 12px; text-transform: uppercase; color: var(--fg2); margin-bottom: 8px; letter-spacing: 0.5px; }
+  .pipeline { margin-bottom: 20px; }
+  .pipe-stage { display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: var(--radius); margin-bottom: 4px; cursor: pointer; }
+  .pipe-stage:hover { background: var(--bg3); }
+  .pipe-stage.active { background: var(--bg3); border-left: 2px solid var(--accent); }
+  .pipe-icon { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .pipe-icon.green { background: var(--green); } .pipe-icon.amber { background: var(--amber); } .pipe-icon.gray { background: var(--fg3); }
+  .pipe-name { font-size: 13px; flex: 1; }
+  .pipe-count { font-size: 11px; color: var(--fg2); }
+
+  .filter-section { margin-top: 16px; }
+  .tag-list { display: flex; flex-wrap: wrap; gap: 4px; }
+  .tag { padding: 2px 8px; border-radius: 10px; font-size: 11px; background: var(--bg3); color: var(--fg2); cursor: pointer; border: 1px solid transparent; }
+  .tag:hover, .tag.active { border-color: var(--accent); color: var(--accent); }
+  .filter-btn { display: block; width: 100%; margin-top: 4px; padding: 4px; background: none; border: none; color: var(--fg3); font-size: 11px; cursor: pointer; text-align: left; }
+  .filter-btn:hover { color: var(--fg2); }
+
+  /* Content area */
+  .content { background: var(--bg); overflow-y: auto; padding: 16px; }
+  .inquiry-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; cursor: pointer; }
+  .inquiry-card:hover { border-color: var(--fg3); }
+  .inquiry-card.expanded { border-color: var(--accent); }
+  .inquiry-header { display: flex; align-items: flex-start; gap: 8px; }
+  .inquiry-status { font-size: 11px; padding: 1px 6px; border-radius: 8px; flex-shrink: 0; }
+  .inquiry-status.active { background: rgba(88,166,255,0.15); color: var(--accent); }
+  .inquiry-status.completed { background: rgba(63,185,80,0.15); color: var(--green); }
+  .inquiry-question { font-size: 14px; line-height: 1.4; flex: 1; }
+  .inquiry-meta { display: flex; gap: 12px; margin-top: 8px; font-size: 11px; color: var(--fg2); }
+  .inquiry-tags { display: flex; gap: 4px; margin-top: 6px; }
+  .inquiry-pass { margin-top: 12px; padding: 12px; background: var(--bg); border-radius: var(--radius); border-left: 2px solid var(--fg3); }
+  .inquiry-pass.completed { border-left-color: var(--green); }
+  .inquiry-pass h4 { font-size: 12px; color: var(--fg2); margin-bottom: 6px; }
+  .inquiry-pass p { font-size: 13px; line-height: 1.5; white-space: pre-wrap; }
+
+  /* Right panel */
+  .right-panel { background: var(--bg2); overflow-y: auto; padding: 12px; }
+  .panel-section { margin-bottom: 20px; }
+  .panel-section h3 { font-size: 12px; text-transform: uppercase; color: var(--fg2); margin-bottom: 8px; letter-spacing: 0.5px; }
+  .vector-item { padding: 8px; background: var(--bg); border-radius: var(--radius); margin-bottom: 6px; font-size: 12px; line-height: 1.4; }
+  .vector-type { font-size: 10px; text-transform: uppercase; color: var(--accent); margin-bottom: 2px; }
+  .candidate-item { padding: 6px 8px; background: var(--bg); border-radius: var(--radius); margin-bottom: 4px; font-size: 12px; display: flex; justify-content: space-between; }
+  .entropy-bar { height: 4px; border-radius: 2px; background: var(--bg3); margin-top: 4px; }
+  .entropy-fill { height: 100%; border-radius: 2px; background: var(--green); }
+  .entropy-fill.high { background: var(--amber); }
+  .entropy-fill.critical { background: var(--red); }
+
+  /* Footer */
+  footer { background: var(--bg2); border-top: 1px solid var(--border); padding: 8px 20px; display: flex; align-items: center; gap: 20px; font-size: 11px; color: var(--fg2); }
+  .stat { display: flex; align-items: center; gap: 4px; }
+  .stat-label { color: var(--fg3); }
+
+  /* Login overlay */
+  .login-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 100; }
+  .login-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 32px; max-width: 400px; width: 90%; }
+  .login-box h2 { font-size: 18px; margin-bottom: 8px; }
+  .login-box p { font-size: 13px; color: var(--fg2); margin-bottom: 16px; }
+  .login-box input { width: 100%; padding: 8px 12px; background: var(--bg); color: var(--fg); border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px; margin-bottom: 12px; }
+  .login-box button { width: 100%; padding: 8px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius); font-size: 14px; cursor: pointer; }
+  .login-box button:hover { opacity: 0.9; }
+  .login-box .error { color: var(--red); font-size: 12px; margin-top: 8px; display: none; }
+  .login-box .url-field { margin-bottom: 12px; }
+  .login-box label { font-size: 12px; color: var(--fg2); display: block; margin-bottom: 4px; }
+
+  .empty-state { text-align: center; padding: 40px; color: var(--fg3); }
+  .empty-state p { font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Meta-Cognitive Suite</h1>
+    <div class="conn-status"><div class="conn-dot" id="connDot"></div><span id="connText">Disconnected</span></div>
+    <select class="agent-select" id="agentSelect"><option value="main">main</option></select>
+    <span class="mode-badge" id="modeBadge">—</span>
+  </header>
+
+  <main>
+    <div class="sidebar">
+      <div class="pipeline">
+        <h3>Pipeline</h3>
+        <div class="pipe-stage" data-view="contemplation"><div class="pipe-icon gray" id="pipeContemp"></div><span class="pipe-name">Contemplation</span><span class="pipe-count" id="countContemp">—</span></div>
+        <div class="pipe-stage" data-view="metabolism"><div class="pipe-icon gray" id="pipeMeta"></div><span class="pipe-name">Metabolism</span><span class="pipe-count" id="countMeta">—</span></div>
+        <div class="pipe-stage" data-view="vectors"><div class="pipe-icon gray" id="pipeVec"></div><span class="pipe-name">Growth Vectors</span><span class="pipe-count" id="countVec">—</span></div>
+        <div class="pipe-stage" data-view="nightshift"><div class="pipe-icon gray" id="pipeNight"></div><span class="pipe-name">Nightshift</span><span class="pipe-count" id="countNight">—</span></div>
+        <div class="pipe-stage" data-view="stability"><div class="pipe-icon gray" id="pipeStab"></div><span class="pipe-name">Stability</span><span class="pipe-count" id="countStab">—</span></div>
+      </div>
+      <div class="filter-section" id="filterSection">
+        <h3>Topics</h3>
+        <div class="tag-list" id="tagList"></div>
+        <button class="filter-btn" id="clearFilters">Clear filters</button>
+      </div>
+    </div>
+
+    <div class="content" id="contentArea">
+      <div class="empty-state"><p>Connecting...</p></div>
+    </div>
+
+    <div class="right-panel">
+      <div class="panel-section" id="vectorPanel">
+        <h3>Recent Growth Vectors</h3>
+        <div id="vectorList"><div class="empty-state"><p>No vectors yet</p></div></div>
+      </div>
+      <div class="panel-section" id="metaPanel">
+        <h3>Metabolism Queue</h3>
+        <div id="metaList"><div class="empty-state"><p>No candidates</p></div></div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="stat"><span class="stat-label">Entropy:</span><span id="entropyVal">—</span></div>
+    <div class="stat"><span class="stat-label">Nightshift:</span><span id="nightshiftVal">—</span></div>
+    <div class="stat"><span class="stat-label">Last refresh:</span><span id="lastRefresh">—</span></div>
+  </footer>
+</div>
+
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <h2>Connect to Gateway</h2>
+    <p>Enter your OpenClaw gateway URL and token.</p>
+    <div class="url-field">
+      <label for="gatewayUrl">Gateway URL</label>
+      <input type="text" id="gatewayUrl" value="ws://127.0.0.1:18789" placeholder="ws://127.0.0.1:18789">
+    </div>
+    <div>
+      <label for="tokenInput">Token</label>
+      <input type="password" id="tokenInput" placeholder="Gateway token">
+    </div>
+    <button id="connectBtn">Connect</button>
+    <div class="error" id="loginError"></div>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // --- State ---
+  let ws = null, token = '', agentId = 'main', currentView = 'contemplation', activeTag = null;
+  let state = { contemplation: null, metabolism: null, stability: null, nightshift: null, vectors: null };
+  let rpcId = 0;
+  const pending = new Map();
+  let refreshInterval = null;
+
+  // --- DOM ---
+  const $ = s => document.querySelector(s);
+  const $$ = s => document.querySelectorAll(s);
+
+  // --- Persistence ---
+  function loadCreds() {
+    try { const c = JSON.parse(localStorage.getItem('mcs-creds')); if (c) { $('#gatewayUrl').value = c.url || 'ws://127.0.0.1:18789'; token = c.token || ''; $('#tokenInput').value = token; }} catch(e) {}
+  }
+  function saveCreds(url, t) { localStorage.setItem('mcs-creds', JSON.stringify({ url, token: t })); }
+
+  // --- WebSocket ---
+  function connect(url, t) {
+    token = t;
+    ws = new WebSocket(url);
+    ws.onopen = () => {
+      // OpenClaw gateway auth: send connect message
+      rpcCall('connect', { token }).then(r => {
+        $('#connDot').classList.add('connected');
+        $('#connText').textContent = 'Connected';
+        $('#loginOverlay').style.display = 'none';
+        saveCreds(url, t);
+        loadAgents();
+        refresh();
+        if (refreshInterval) clearInterval(refreshInterval);
+        refreshInterval = setInterval(refresh, 30000);
+      }).catch(e => {
+        showLoginError('Authentication failed: ' + e);
+        ws.close();
+      });
+    };
+    ws.onclose = () => {
+      $('#connDot').classList.remove('connected');
+      $('#connText').textContent = 'Disconnected';
+      if (refreshInterval) { clearInterval(refreshInterval); refreshInterval = null; }
+    };
+    ws.onerror = () => showLoginError('Connection failed');
+    ws.onmessage = (evt) => {
+      try {
+        const msg = JSON.parse(evt.data);
+        if (msg.id && pending.has(msg.id)) {
+          const { resolve, reject } = pending.get(msg.id);
+          pending.delete(msg.id);
+          if (msg.error) reject(msg.error); else resolve(msg.result);
+        }
+      } catch(e) {}
+    };
+  }
+
+  function rpcCall(method, params = {}) {
+    return new Promise((resolve, reject) => {
+      const id = ++rpcId;
+      pending.set(id, { resolve, reject });
+      ws.send(JSON.stringify({ jsonrpc: '2.0', id, method, params }));
+      setTimeout(() => { if (pending.has(id)) { pending.delete(id); reject('timeout'); }}, 10000);
+    });
+  }
+
+  function showLoginError(msg) { const el = $('#loginError'); el.textContent = msg; el.style.display = 'block'; }
+
+  // --- Data Loading ---
+  async function loadAgents() {
+    try {
+      const r = await rpcCall('agents.list');
+      const sel = $('#agentSelect');
+      sel.innerHTML = '';
+      (r.agents || r || []).forEach(a => {
+        const opt = document.createElement('option');
+        opt.value = a.id || a; opt.textContent = a.name || a.id || a;
+        sel.appendChild(opt);
+      });
+      sel.value = agentId;
+    } catch(e) {}
+  }
+
+  async function refresh() {
+    const p = { agentId };
+    try { state.contemplation = await rpcCall('contemplation.getState', p); } catch(e) { state.contemplation = null; }
+    try { state.metabolism = await rpcCall('metabolism.getState', p); } catch(e) { state.metabolism = null; }
+    try { state.stability = await rpcCall('stability.getState', p); } catch(e) { state.stability = null; }
+    try { state.nightshift = await rpcCall('nightshift.getState', p); } catch(e) { state.nightshift = null; }
+    try { state.vectors = await rpcCall('stability.getGrowthVectors', p); } catch(e) { state.vectors = null; }
+    updateUI();
+    $('#lastRefresh').textContent = new Date().toLocaleTimeString();
+  }
+
+  // --- UI Rendering ---
+  function updateUI() {
+    updatePipeline();
+    updateTags();
+    updateContent();
+    updateRightPanel();
+    updateFooter();
+    updateModeBadge();
+  }
+
+  function updatePipeline() {
+    const c = state.contemplation;
+    if (c) {
+      const active = c.active || 0;
+      $('#countContemp').textContent = active > 0 ? `${active} active` : `${c.completed || 0} done`;
+      setIcon('#pipeContemp', active > 0 ? 'amber' : (c.completed > 0 ? 'green' : 'gray'));
+    }
+    const m = state.metabolism;
+    if (m) {
+      const pending = m.pending || 0;
+      $('#countMeta').textContent = pending > 0 ? `${pending} pending` : 'idle';
+      setIcon('#pipeMeta', pending > 0 ? 'amber' : 'green');
+    }
+    const v = state.vectors;
+    if (v) {
+      const count = Array.isArray(v) ? v.length : (v.vectors ? v.vectors.length : 0);
+      $('#countVec').textContent = `${count} vectors`;
+      setIcon('#pipeVec', count > 0 ? 'green' : 'gray');
+    }
+    const n = state.nightshift;
+    if (n) {
+      const inOffice = n.inOfficeHours || false;
+      $('#countNight').textContent = inOffice ? 'active' : 'idle';
+      setIcon('#pipeNight', inOffice ? 'green' : 'gray');
+    }
+    const s = state.stability;
+    if (s) {
+      const entropy = s.entropy || s.currentEntropy || 0;
+      $('#countStab').textContent = `e=${entropy.toFixed(2)}`;
+      setIcon('#pipeStab', entropy > 0.7 ? 'amber' : 'green');
+    }
+  }
+
+  function setIcon(sel, color) {
+    const el = $(sel);
+    el.className = 'pipe-icon ' + color;
+  }
+
+  function updateTags() {
+    const tags = new Map();
+    const inquiries = (state.contemplation?.inquiries) || [];
+    inquiries.forEach(i => (i.tags || []).forEach(t => tags.set(t, (tags.get(t) || 0) + 1)));
+    const list = $('#tagList');
+    list.innerHTML = '';
+    [...tags.entries()].sort((a,b) => b[1] - a[1]).forEach(([tag, count]) => {
+      const el = document.createElement('span');
+      el.className = 'tag' + (activeTag === tag ? ' active' : '');
+      el.textContent = `${tag} (${count})`;
+      el.onclick = () => { activeTag = activeTag === tag ? null : tag; updateUI(); };
+      list.appendChild(el);
+    });
+  }
+
+  function updateContent() {
+    const area = $('#contentArea');
+    if (currentView === 'contemplation') renderContemplation(area);
+    else if (currentView === 'metabolism') renderMetabolism(area);
+    else if (currentView === 'vectors') renderVectors(area);
+    else if (currentView === 'nightshift') renderNightshift(area);
+    else if (currentView === 'stability') renderStability(area);
+  }
+
+  function renderContemplation(area) {
+    let inquiries = (state.contemplation?.inquiries) || [];
+    if (activeTag) inquiries = inquiries.filter(i => (i.tags || []).includes(activeTag));
+    if (inquiries.length === 0) { area.innerHTML = '<div class="empty-state"><p>No contemplation inquiries yet. Have a meaningful conversation to generate questions.</p></div>'; return; }
+    area.innerHTML = inquiries.sort((a,b) => (b.created||'').localeCompare(a.created||'')).map(i => {
+      const tags = (i.tags || []).map(t => `<span class="tag">${t}</span>`).join('');
+      const passes = (i.passes || []).map(p => `
+        <div class="inquiry-pass ${p.completed ? 'completed' : ''}">
+          <h4>Pass ${p.number} ${p.completed ? '— ' + new Date(p.completed).toLocaleDateString() : '(pending)'}</h4>
+          <p>${p.output ? escHtml(p.output) : 'Awaiting processing...'}</p>
+        </div>`).join('');
+      return `
+        <div class="inquiry-card" onclick="this.classList.toggle('expanded')">
+          <div class="inquiry-header">
+            <span class="inquiry-status ${i.status === 'completed' ? 'completed' : 'active'}">${i.status}</span>
+            <span class="inquiry-question">${escHtml(i.question)}</span>
+          </div>
+          <div class="inquiry-meta">
+            <span>Source: ${i.source || 'unknown'}</span>
+            <span>${i.created ? new Date(i.created).toLocaleDateString() : ''}</span>
+            ${i.entropy ? `<span>Entropy: ${i.entropy.toFixed(2)}</span>` : ''}
+          </div>
+          ${tags ? `<div class="inquiry-tags">${tags}</div>` : ''}
+          ${passes}
+        </div>`;
+    }).join('');
+  }
+
+  function renderMetabolism(area) {
+    const m = state.metabolism;
+    if (!m) { area.innerHTML = '<div class="empty-state"><p>Metabolism data not available</p></div>'; return; }
+    area.innerHTML = `
+      <h3 style="color:var(--fg2);font-size:12px;text-transform:uppercase;margin-bottom:12px">Metabolism Status</h3>
+      <div class="vector-item"><strong>Pending:</strong> ${m.pending || 0} candidates</div>
+      <div class="vector-item"><strong>Processed:</strong> ${m.processed || 0} total</div>
+      <div class="vector-item"><strong>Enabled:</strong> ${m.enabled !== false ? 'Yes' : 'No'}</div>
+    `;
+  }
+
+  function renderVectors(area) {
+    const v = state.vectors;
+    const vectors = Array.isArray(v) ? v : (v?.vectors || []);
+    if (vectors.length === 0) { area.innerHTML = '<div class="empty-state"><p>No growth vectors yet</p></div>'; return; }
+    area.innerHTML = vectors.slice(-20).reverse().map(vec => `
+      <div class="vector-item">
+        <div class="vector-type">${vec.type || 'unknown'}</div>
+        ${escHtml(vec.description || vec.content || JSON.stringify(vec).substring(0, 200))}
+      </div>`).join('');
+  }
+
+  function renderNightshift(area) {
+    const n = state.nightshift;
+    if (!n) { area.innerHTML = '<div class="empty-state"><p>Nightshift data not available</p></div>'; return; }
+    area.innerHTML = `
+      <h3 style="color:var(--fg2);font-size:12px;text-transform:uppercase;margin-bottom:12px">Nightshift Status</h3>
+      <div class="vector-item"><strong>In Office Hours:</strong> ${n.inOfficeHours ? 'Yes' : 'No'}</div>
+      <div class="vector-item"><strong>User Active:</strong> ${n.userActive !== undefined ? (n.userActive ? 'Yes' : 'No') : 'Unknown'}</div>
+      <div class="vector-item"><strong>Queue Depth:</strong> ${n.queueDepth || n.taskQueue?.length || 0}</div>
+      <div class="vector-item"><strong>Tasks Processed Tonight:</strong> ${n.processedTonight || 0}</div>
+    `;
+  }
+
+  function renderStability(area) {
+    const s = state.stability;
+    if (!s) { area.innerHTML = '<div class="empty-state"><p>Stability data not available</p></div>'; return; }
+    const entropy = s.entropy || s.currentEntropy || 0;
+    const eClass = entropy > 0.7 ? 'critical' : entropy > 0.5 ? 'high' : '';
+    area.innerHTML = `
+      <h3 style="color:var(--fg2);font-size:12px;text-transform:uppercase;margin-bottom:12px">Stability Status</h3>
+      <div class="vector-item">
+        <strong>Current Entropy:</strong> ${entropy.toFixed(3)}
+        <div class="entropy-bar"><div class="entropy-fill ${eClass}" style="width:${Math.min(entropy*100,100)}%"></div></div>
+      </div>
+      <div class="vector-item"><strong>Principles:</strong> ${(s.principles || []).length}</div>
+      <div class="vector-item"><strong>Loop Detections:</strong> ${s.loopDetections || 0}</div>
+    `;
+  }
+
+  function updateRightPanel() {
+    // Vectors
+    const v = state.vectors;
+    const vectors = Array.isArray(v) ? v : (v?.vectors || []);
+    const vl = $('#vectorList');
+    if (vectors.length === 0) { vl.innerHTML = '<div class="empty-state"><p>No vectors</p></div>'; }
+    else {
+      vl.innerHTML = vectors.slice(-5).reverse().map(vec => `
+        <div class="vector-item">
+          <div class="vector-type">${vec.type || 'growth'}</div>
+          ${escHtml((vec.description || vec.content || '').substring(0, 120))}
+        </div>`).join('');
+    }
+    // Metabolism queue
+    const m = state.metabolism;
+    const ml = $('#metaList');
+    if (!m || !(m.pending > 0)) { ml.innerHTML = '<div class="empty-state"><p>Queue empty</p></div>'; }
+    else { ml.innerHTML = `<div class="candidate-item"><span>${m.pending} candidates pending</span></div>`; }
+  }
+
+  function updateFooter() {
+    const s = state.stability;
+    const entropy = s?.entropy || s?.currentEntropy || 0;
+    $('#entropyVal').textContent = entropy.toFixed(3);
+    const n = state.nightshift;
+    $('#nightshiftVal').textContent = n ? (n.inOfficeHours ? 'Active' : 'Idle') : '—';
+  }
+
+  function updateModeBadge() {
+    const badge = $('#modeBadge');
+    const m = state.metabolism;
+    if (m && m.enabled === false) {
+      badge.textContent = 'Frozen';
+      badge.className = 'mode-badge frozen';
+    } else {
+      badge.textContent = 'Training';
+      badge.className = 'mode-badge training';
+    }
+  }
+
+  function escHtml(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+  // --- Events ---
+  $('#connectBtn').onclick = () => {
+    const url = $('#gatewayUrl').value.trim();
+    const t = $('#tokenInput').value.trim();
+    if (!url || !t) { showLoginError('Both fields required'); return; }
+    connect(url, t);
+  };
+
+  $('#agentSelect').onchange = (e) => { agentId = e.target.value; refresh(); };
+  $('#clearFilters').onclick = () => { activeTag = null; updateUI(); };
+
+  $$('.pipe-stage').forEach(el => {
+    el.onclick = () => {
+      $$('.pipe-stage').forEach(e => e.classList.remove('active'));
+      el.classList.add('active');
+      currentView = el.dataset.view;
+      updateContent();
+    };
+  });
+
+  // Set default active
+  document.querySelector('.pipe-stage[data-view="contemplation"]')?.classList.add('active');
+
+  // Auto-connect from saved creds
+  loadCreds();
+  if (token) {
+    const url = $('#gatewayUrl').value;
+    connect(url, token);
+  }
+
+  // Enter key on login
+  $('#tokenInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('#connectBtn').click(); });
+})();
+</script>
+</body>
+</html>
