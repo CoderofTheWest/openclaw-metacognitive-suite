@@ -16,3 +16,6 @@
 [submodule "plugins/openclaw-plugin-crystallization"]
 	path = plugins/openclaw-plugin-crystallization
 	url = https://github.com/CoderofTheWest/openclaw-plugin-crystallization.git
+[submodule "plugins/openclaw-plugin-graph"]
+	path = plugins/openclaw-plugin-graph
+	url = https://github.com/CoderofTheWest/openclaw-plugin-graph.git
