@@ -1,0 +1,18 @@
+[submodule "plugins/openclaw-plugin-stability"]
+	path = plugins/openclaw-plugin-stability
+	url = https://github.com/CoderofTheWest/openclaw-plugin-stability.git
+[submodule "plugins/openclaw-plugin-continuity"]
+	path = plugins/openclaw-plugin-continuity
+	url = https://github.com/CoderofTheWest/openclaw-plugin-continuity.git
+[submodule "plugins/openclaw-plugin-metabolism"]
+	path = plugins/openclaw-plugin-metabolism
+	url = https://github.com/CoderofTheWest/openclaw-plugin-metabolism.git
+[submodule "plugins/openclaw-plugin-nightshift"]
+	path = plugins/openclaw-plugin-nightshift
+	url = https://github.com/CoderofTheWest/openclaw-plugin-nightshift.git
+[submodule "plugins/openclaw-plugin-contemplation"]
+	path = plugins/openclaw-plugin-contemplation
+	url = https://github.com/CoderofTheWest/openclaw-plugin-contemplation.git
+[submodule "plugins/openclaw-plugin-crystallization"]
+	path = plugins/openclaw-plugin-crystallization
+	url = https://github.com/CoderofTheWest/openclaw-plugin-crystallization.git

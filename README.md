@@ -53,21 +53,17 @@ Conversation
 
 ## Installation
 
-Clone all six plugins and add their paths to your `openclaw.json`:
+Clone the suite with all plugins:
 
 ```bash
-git clone https://github.com/CoderofTheWest/openclaw-plugin-stability.git
-git clone https://github.com/CoderofTheWest/openclaw-plugin-continuity.git
-git clone https://github.com/CoderofTheWest/openclaw-plugin-metabolism.git
-git clone https://github.com/CoderofTheWest/openclaw-plugin-nightshift.git
-git clone https://github.com/CoderofTheWest/openclaw-plugin-contemplation.git
-git clone https://github.com/CoderofTheWest/openclaw-plugin-crystallization.git
+git clone --recursive https://github.com/CoderofTheWest/openclaw-metacognitive-suite.git
+cd openclaw-metacognitive-suite
 ```
 
-Install dependencies for plugins that need them:
+All six plugins are in the `plugins/` directory. Install dependencies for plugins that need them:
 
 ```bash
-cd openclaw-plugin-metabolism && npm install
+cd plugins/openclaw-plugin-metabolism && npm install
 ```
 
 Add to your `openclaw.json`:
@@ -77,16 +73,25 @@ Add to your `openclaw.json`:
   "plugins": {
     "load": {
       "paths": [
-        "/path/to/openclaw-plugin-stability",
-        "/path/to/openclaw-plugin-continuity",
-        "/path/to/openclaw-plugin-metabolism",
-        "/path/to/openclaw-plugin-nightshift",
-        "/path/to/openclaw-plugin-contemplation",
-        "/path/to/openclaw-plugin-crystallization"
+        "/path/to/openclaw-metacognitive-suite/plugins/openclaw-plugin-stability",
+        "/path/to/openclaw-metacognitive-suite/plugins/openclaw-plugin-continuity",
+        "/path/to/openclaw-metacognitive-suite/plugins/openclaw-plugin-metabolism",
+        "/path/to/openclaw-metacognitive-suite/plugins/openclaw-plugin-nightshift",
+        "/path/to/openclaw-metacognitive-suite/plugins/openclaw-plugin-contemplation",
+        "/path/to/openclaw-metacognitive-suite/plugins/openclaw-plugin-crystallization"
       ]
     }
   }
 }
+```
+
+You can also install plugins individually if you only want a subset:
+
+```bash
+git clone https://github.com/CoderofTheWest/openclaw-plugin-stability.git
+git clone https://github.com/CoderofTheWest/openclaw-plugin-continuity.git
+# etc. — see the table above for all repos
+```
 ```
 
 See [`openclaw.example.json`](./openclaw.example.json) for a complete configuration example with all plugin settings.
