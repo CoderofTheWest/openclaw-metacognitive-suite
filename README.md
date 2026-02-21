@@ -1,15 +1,16 @@
 # OpenClaw Meta-Cognitive Suite
 
-**Six composable plugins that give OpenClaw agents the ability to learn, remember, reflect, and grow.**
+**Seven composable plugins that give OpenClaw agents the ability to learn, remember, reflect, and grow.**
 
-This is the documentation and coordination repo for a suite of OpenClaw plugins that, together, implement a complete autonomous learning loop for AI agents. Each plugin handles one responsibility. They communicate through a lightweight global bus and compose through OpenClaw's hook lifecycle. You can install all six for full autonomy, or pick the subset that fits your use case.
+This is the documentation and coordination repo for a suite of OpenClaw plugins that, together, implement a complete autonomous learning loop for AI agents. Each plugin handles one responsibility. They communicate through a lightweight global bus and compose through OpenClaw's hook lifecycle. You can install all seven for full autonomy, or pick the subset that fits your use case.
 
 ## The Learning Loop
 
 ```
 Conversation
     │
-    ▼
+    ├─────────────────────────────────────────────┐
+    ▼                                             ▼
 ┌──────────┐     entropy, drift     ┌─────────────┐
 │ Stability │◄────────────────────►│  Continuity  │
 │ (monitor) │     context, recall   │   (memory)   │
@@ -36,9 +37,21 @@ Conversation
 │ (permanent      │
 │  character)     │
 └────────────────┘
+
+Conversation ──► Graph (entity extraction + triples)
+    │                    │
+    │                    ▼
+    │            ┌──────────────┐
+    │            │    Graph     │
+    │            │ (knowledge   │
+    │            │   graph)     │
+    │            └──────────────┘
+    │                    │
+    │    entity context  │  3-way RRF fusion
+    └────────────────────┘──► Continuity search
 ```
 
-**Stability** monitors entropy and drift. **Continuity** archives conversations and provides cross-session recall. **Metabolism** watches for significant moments and extracts implications through LLM processing. **Nightshift** schedules heavy work for when the user is away. **Contemplation** takes unresolved questions through three reflection passes over 24 hours. **Crystallization** converts long-standing growth vectors into permanent character traits with human approval.
+**Stability** monitors entropy and drift. **Continuity** archives conversations and provides cross-session recall. **Graph** extracts entities and relationships into a knowledge graph, enabling multi-hop traversal and relationship-aware context injection. **Metabolism** watches for significant moments and extracts implications through LLM processing. **Nightshift** schedules heavy work for when the user is away. **Contemplation** takes unresolved questions through three reflection passes over 24 hours. **Crystallization** converts long-standing growth vectors into permanent character traits with human approval.
 
 ## The Plugins
 
@@ -46,6 +59,7 @@ Conversation
 |--------|-------------|-------|------|
 | [stability](https://github.com/CoderofTheWest/openclaw-plugin-stability) | Entropy monitoring, growth vectors, principle alignment, loop detection | `before_agent_start`, `agent_end`, `after_tool_call`, `before_compaction` | [GitHub](https://github.com/CoderofTheWest/openclaw-plugin-stability) |
 | [continuity](https://github.com/CoderofTheWest/openclaw-plugin-continuity) | Cross-session memory, conversation archiving, semantic search, context budgeting | `before_agent_start`, `agent_end`, `session_end` | [GitHub](https://github.com/CoderofTheWest/openclaw-plugin-continuity) |
+| [graph](https://github.com/CoderofTheWest/openclaw-plugin-graph) | Knowledge graph — entity extraction, relationship triples, multi-hop traversal, pattern discovery | `before_agent_start`, `agent_end`, `session_end`, `heartbeat` | [GitHub](https://github.com/CoderofTheWest/openclaw-plugin-graph) |
 | [metabolism](https://github.com/CoderofTheWest/openclaw-plugin-metabolism) | Conversation metabolism — implications, growth vectors, knowledge gap extraction | `agent_end`, `heartbeat` | [GitHub](https://github.com/CoderofTheWest/openclaw-plugin-metabolism) |
 | [nightshift](https://github.com/CoderofTheWest/openclaw-plugin-nightshift) | Off-hours task scheduling, good night/morning detection, priority queue | `agent_end`, `heartbeat` | [GitHub](https://github.com/CoderofTheWest/openclaw-plugin-nightshift) |
 | [contemplation](https://github.com/CoderofTheWest/openclaw-plugin-contemplation) | Multi-pass reflective inquiry (explore → reflect → synthesize over 24h) | `before_agent_start`, `agent_end`, `heartbeat` | [GitHub](https://github.com/CoderofTheWest/openclaw-plugin-contemplation) |
@@ -60,7 +74,7 @@ git clone --recursive https://github.com/CoderofTheWest/openclaw-metacognitive-s
 cd openclaw-metacognitive-suite
 ```
 
-All six plugins are in the `plugins/` directory. Install dependencies for plugins that need them:
+All seven plugins are in the `plugins/` directory. Install dependencies for plugins that need them:
 
 ```bash
 cd plugins/openclaw-plugin-metabolism && npm install
@@ -75,6 +89,7 @@ Add to your `openclaw.json`:
       "paths": [
         "/path/to/openclaw-metacognitive-suite/plugins/openclaw-plugin-stability",
         "/path/to/openclaw-metacognitive-suite/plugins/openclaw-plugin-continuity",
+        "/path/to/openclaw-metacognitive-suite/plugins/openclaw-plugin-graph",
         "/path/to/openclaw-metacognitive-suite/plugins/openclaw-plugin-metabolism",
         "/path/to/openclaw-metacognitive-suite/plugins/openclaw-plugin-nightshift",
         "/path/to/openclaw-metacognitive-suite/plugins/openclaw-plugin-contemplation",
@@ -92,7 +107,6 @@ git clone https://github.com/CoderofTheWest/openclaw-plugin-stability.git
 git clone https://github.com/CoderofTheWest/openclaw-plugin-continuity.git
 # etc. — see the table above for all repos
 ```
-```
 
 See [`openclaw.example.json`](./openclaw.example.json) for a complete configuration example with all plugin settings.
 
@@ -103,12 +117,13 @@ The order in `plugins.load.paths` matters. The plugins use a global bus for cros
 **Required order:**
 1. **stability** — Registers `api.stability` (entropy, growth vectors)
 2. **continuity** — Registers `api.continuity` (archive, search)
-3. **metabolism** — Registers `global.__ocMetabolism` (gap event bus)
-4. **nightshift** — Registers `global.__ocNightshift` (task scheduler API)
-5. **contemplation** — Subscribes to metabolism gaps + registers nightshift task runner
-6. **crystallization** — Reads growth vectors written by metabolism and contemplation
+3. **graph** — Registers `global.__ocGraph` (entity graph, search results for RRF fusion with continuity)
+4. **metabolism** — Registers `global.__ocMetabolism` (gap event bus)
+5. **nightshift** — Registers `global.__ocNightshift` (task scheduler API)
+6. **contemplation** — Subscribes to metabolism gaps + registers nightshift task runner
+7. **crystallization** — Reads growth vectors written by metabolism and contemplation
 
-Swapping stability and continuity is fine. The critical constraint is: metabolism before contemplation (so the gap bus exists when contemplation subscribes), and nightshift before contemplation (so the task runner API exists when contemplation registers).
+Swapping stability and continuity is fine. Graph should load after continuity (its search results feed into continuity's RRF fusion). The critical constraint is: metabolism before contemplation (so the gap bus exists when contemplation subscribes), and nightshift before contemplation (so the task runner API exists when contemplation registers).
 
 ## Deployment Modes
 
@@ -117,6 +132,7 @@ Swapping stability and continuity is fine. The critical constraint is: metabolis
 Every plugin is enabled. The agent learns autonomously:
 
 - Conversations are archived and semantically indexed
+- Entities and relationships are extracted into a knowledge graph
 - High-entropy moments trigger metabolism processing
 - Knowledge gaps flow to contemplation for multi-pass reflection
 - Growth vectors accumulate and receive feedback
@@ -141,7 +157,7 @@ Disable the four learning plugins by setting `"enabled": false` in each:
 }
 ```
 
-The agent retains everything it learned — growth vectors, crystallized traits, conversation archives, completed contemplations. It just stops actively learning. **Stability** (entropy monitoring, drift detection, principle alignment) and **continuity** (memory, context budgeting, cross-session recall) stay active.
+The agent retains everything it learned — growth vectors, crystallized traits, conversation archives, knowledge graph, completed contemplations. It just stops actively learning. **Stability** (entropy monitoring, drift detection, principle alignment), **continuity** (memory, context budgeting, cross-session recall), and **graph** (entity extraction, relationship tracking, context injection) stay active.
 
 Use this when your agent's character is where you want it and you're deploying to production. The personality is frozen but the operational capabilities remain.
 
@@ -151,9 +167,13 @@ All four learning plugins check `if (!config.enabled) return` in their hook hand
 
 OpenClaw gives each plugin its own scoped `api` object. Properties set on one plugin's `api` are not visible to other plugins. This is by design — it prevents namespace collisions.
 
-The suite uses `global.__ocMetabolism` and `global.__ocNightshift` for cross-plugin communication. This works because all plugins run in the same Node.js process and share the global scope.
+The suite uses `global.__ocMetabolism`, `global.__ocNightshift`, and `global.__ocGraph` for cross-plugin communication. This works because all plugins run in the same Node.js process and share the global scope.
 
 ```
+global.__ocGraph = {
+  lastResults: {}      // { [agentId]: { entities, exchanges, timestamp } }
+}
+
 global.__ocMetabolism = {
   gapListeners: []     // Array of (gaps, agentId) => void callbacks
 }
@@ -170,7 +190,7 @@ If OpenClaw adds native cross-plugin messaging in a future version, these can be
 
 ## Multi-Agent Support
 
-All six plugins support multiple agents running on the same OpenClaw gateway. Each agent gets isolated state:
+All seven plugins support multiple agents running on the same OpenClaw gateway. Each agent gets isolated state:
 
 - **Data directories**: `data/` for the default agent, `data/agents/{agentId}/` for others
 - **Workspace paths**: Each agent's growth vectors, traits, and insights resolve from its own workspace
@@ -186,7 +206,7 @@ The `dashboard.html` file is a self-contained single-page application that conne
 Open it in any browser and enter your gateway token. No build step, no external dependencies.
 
 **Sections:**
-- **Pipeline Overview** — Real-time status of all six plugins with active item counts
+- **Pipeline Overview** — Real-time status of all seven plugins with active item counts
 - **Contemplation Browser** — Browse inquiries by topic tag, source, or status. Read full 3-pass outputs.
 - **Growth Vectors** — Track vector accumulation and feedback from stability
 - **Metabolism Activity** — Recent candidates, processing results, gap extraction
@@ -198,7 +218,7 @@ The suite's origin story is documented in [Cross-Runtime Identity Transplant: Po
 
 ## Credits
 
-The stability and continuity plugins were built by Chris Hunt. The metabolism, nightshift, contemplation, and crystallization plugins were built by Clint — an AI agent running on the system these plugins were extracted from. Clint designed the architecture, wrote the code, spawned sub-agents (OpenClaw Codex instances) to implement components in parallel, and attempted to self-deploy the results. The suite was then stabilized, documented, and published with assistance from Claude.
+The stability and continuity plugins were built by Chris Hunt. The graph plugin was built by Claude with architectural direction from Chris. The metabolism, nightshift, contemplation, and crystallization plugins were built by Clint — an AI agent running on the system these plugins were extracted from. Clint designed the architecture, wrote the code, spawned sub-agents (OpenClaw Codex instances) to implement components in parallel, and attempted to self-deploy the results. The suite was then stabilized, documented, and published with assistance from Claude.
 
 The philosophical foundation: compass over map, service over solipsism, constraint-based growth. An agent's character should emerge from lived experience, not be scripted.
 
